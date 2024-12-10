@@ -1,71 +1,67 @@
 package tp3.producers;
 
-import org.apache.kafka.clients.producer.Callback;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.serialization.StringSerializer;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import lombok.extern.slf4j.Slf4j;
+import tp3.models.Route;
 
 import java.util.Properties;
 
 @Slf4j
 public class RouteProducer {
 
+    private static final String BOOTSTRAP_SERVERS = "broker1:9092";
+    private static final String TOPIC = "trips-topic";
+
     public static void main(String[] args) {
 
-        String bootstrapServers = "broker1:9092";
-
-        // create Producer properties
         Properties properties = new Properties();
-        properties.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        properties.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, BOOTSTRAP_SERVERS);
         properties.setProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
         properties.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
 
         // create the producer
         KafkaProducer<String, String> producer = new KafkaProducer<>(properties);
 
-        for (int i = 0; i < 10; i++) {
+        ObjectMapper objectMapper = new ObjectMapper();
 
-            // create a producer record
+        try {
+            for (int i = 0; i < 10; i++) {
+                Route route = new Route(); // Create new Trip object
+                String key = "route_" + route.getId(); // Create key
 
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
+                String value = objectMapper.writeValueAsString(route); // Serialize Trip object to JSON
 
-            String topic = "wordcount-input";
-            String value = "hello world " + Integer.toString(i);
-            String key = "id_" + Integer.toString(i);
+                ProducerRecord<String, String> record = new ProducerRecord<>(TOPIC, key, value);
 
-            ProducerRecord<String, String> producerRecord = new ProducerRecord<>(topic, key, value);
-
-            // send data - asynchronous
-            producer.send(producerRecord, new Callback() {
-                public void onCompletion(RecordMetadata recordMetadata, Exception e) {
-                    // executes every time a record is successfully sent or an exception is thrown
+                // Send data asynchronously
+                producer.send(record, (RecordMetadata metadata, Exception e) -> {
                     if (e == null) {
-                        // the record was successfully sent
-                        log.info("Received new metadata. \n" +
-                                "Topic:" + recordMetadata.topic() + "\n" +
-                                "Key:" + producerRecord.key() + "\n" +
-                                "Partition: " + recordMetadata.partition() + "\n" +
-                                "Offset: " + recordMetadata.offset() + "\n" +
-                                "Timestamp: " + recordMetadata.timestamp());
+                        // Log success
+                        log.info("Successfully sent trip: \n" +
+                                "Key: " + key + "\n" +
+                                "Value: " + value + "\n" +
+                                "Partition: " + metadata.partition() + "\n" +
+                                "Offset: " + metadata.offset());
                     } else {
                         log.error("Error while producing", e);
                     }
-                }
-            });
-        }
+                });
 
-        // flush data - synchronous
-        producer.flush();
-        // flush and close producer
-        producer.close();
+                Thread.sleep(1000); // TODO See if needed
+            }
+        } catch (JsonProcessingException | InterruptedException e) {
+            log.error("Error while producing messages", e);
+        } finally {
+            producer.flush();
+            producer.close();
+        }
     }
 }

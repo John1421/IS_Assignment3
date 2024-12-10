@@ -44,7 +44,7 @@ public class TripProducer {
                 producer.send(record, (RecordMetadata metadata, Exception e) -> {
                     if (e == null) {
                         // Log success
-                        log.info("Successfully sent record: \n" +
+                        log.info("Successfully sent trip: \n" +
                                 "Key: " + key + "\n" +
                                 "Value: " + value + "\n" +
                                 "Partition: " + metadata.partition() + "\n" +
@@ -54,7 +54,7 @@ public class TripProducer {
                     }
                 });
 
-                Thread.sleep(1000);
+                Thread.sleep(1000); // TODO See if needed
             }
         } catch (JsonProcessingException | InterruptedException e) {
             log.error("Error while producing messages", e);

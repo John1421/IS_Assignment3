@@ -52,7 +52,7 @@ public class RandomGenerator {
      * @return a random positive long value.
      */
     public static long getRandomId() {
-        return Math.abs(RANDOM.nextLong());
+        return Math.abs(RANDOM.nextLong(1000));
     }
 
     /**
