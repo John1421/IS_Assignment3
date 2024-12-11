@@ -10,7 +10,8 @@
 				"vscjava.vscode-maven",
 				"vscjava.vscode-java-pack",
 				"redhat.fabric8-analytics",
-				"mhutchie.git-graph"
+				"mhutchie.git-graph",
+				"ckolkman.vscode-postgres"
 			]
 		}
 	}
