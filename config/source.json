@@ -1,0 +1,14 @@
+{
+    "name": "jdbc-source-suppliers-example",
+    "config": {
+        "connector.class": "io.confluent.connect.jdbc.JdbcSourceConnector",
+        "connection.url": "jdbc:postgresql://database:5432/project3",
+        "connection.user": "postegres",
+        "connection.password": "nopass",
+        "dialect.name": "PostgreSqlDatabaseeDialect",
+        "mode": "bulk",
+        "query": "SELECT * FROM operator;",
+        "poll.interval.ms": "60000",
+        "topic.prefix": "project3fromDB"
+    }
+}
