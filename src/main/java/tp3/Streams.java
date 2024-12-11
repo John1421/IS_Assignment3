@@ -8,7 +8,6 @@ import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.kstream.KStream;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class Streams {
@@ -19,7 +18,7 @@ public class Streams {
         String outputTopic = "req1";
 
         Properties props = new Properties();
-        props.put(StreamsConfig.APPLICATION_ID_CONFIG, "req1");
+        props.put(StreamsConfig.APPLICATION_ID_CONFIG, "project3");
         props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "broker1:9092");
         props.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.String().getClass());
         props.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, Serdes.String().getClass());
@@ -29,14 +28,6 @@ public class Streams {
         KStream<String, String> routesStream = builder.stream(inputTopic);
 
         ObjectMapper objectMapper = new ObjectMapper();
-        try {
-            objectMapper.readTree(outputTopic);
-        } catch (JsonProcessingException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-        routesStream
-                .to(outputTopic);
 
         KafkaStreams streams = new KafkaStreams(builder.build(), props);
 
