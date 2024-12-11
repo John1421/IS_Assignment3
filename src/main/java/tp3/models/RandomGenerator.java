@@ -14,6 +14,17 @@ public class RandomGenerator {
     private static final List<String> TRANSPORT_TYPES = List.of(
             "Bus", "Train", "Plane", "Car", "Taxi");
 
+    private static List<String> OPERATORS = List.of(
+            "SMTUC", "Bolt");
+
+    public static void setOPERATORS(List<String> operators) {
+        OPERATORS = operators;
+    }
+
+    public static void addOPERATORS(String operator) {
+        OPERATORS.add(operator);
+    }
+
     /**
      * Generate a random city name from the predefined list.
      * 
@@ -21,6 +32,15 @@ public class RandomGenerator {
      */
     public static String getRandomCity() {
         return CITIES.get(RANDOM.nextInt(CITIES.size()));
+    }
+
+    /**
+     * Generate a random city name from the predefined list.
+     * 
+     * @return a random city name.
+     */
+    public static String getRandomOperator() {
+        return OPERATORS.get(RANDOM.nextInt(OPERATORS.size()));
     }
 
     /**

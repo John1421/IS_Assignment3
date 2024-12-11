@@ -11,7 +11,7 @@ public class Route {
     private String origin;
     private String destination;
     private String transportType;
-    private long operatorId;
+    private String operator;
 
     // Constructor with random generation
     public Route() {
@@ -20,6 +20,6 @@ public class Route {
         this.origin = RandomGenerator.getRandomCity();
         this.destination = RandomGenerator.getRandomDestination(this.origin);
         this.transportType = RandomGenerator.getRandomTransportType();
-        this.operatorId = RandomGenerator.getRandomId();
+        this.operator = RandomGenerator.getRandomOperator();
     }
 }
