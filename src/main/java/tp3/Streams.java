@@ -14,8 +14,8 @@ public class Streams {
 
     public static void main(String[] args) {
 
-        String inputTopic = "routes-topic";
-        String outputTopic = "req1";
+        String routesTopic = "routes-topic";
+        String tripsTopic = "trips-topic";
 
         Properties props = new Properties();
         props.put(StreamsConfig.APPLICATION_ID_CONFIG, "project3");
@@ -25,12 +25,10 @@ public class Streams {
 
         StreamsBuilder builder = new StreamsBuilder();
 
-        KStream<String, String> routesStream = builder.stream(inputTopic);
-
-        ObjectMapper objectMapper = new ObjectMapper();
+        // -------------------- REQ 1 --------------------
+        KStream<String, String> req1Stream = builder.stream(routesTopic);
 
         KafkaStreams streams = new KafkaStreams(builder.build(), props);
-
         CountDownLatch latch = new CountDownLatch(1);
         Runtime.getRuntime().addShutdownHook(
                 new Thread("streams-shutdown-hook") {
@@ -40,7 +38,6 @@ public class Streams {
                         latch.countDown();
                     }
                 });
-
         try {
             streams.start();
             latch.await();
