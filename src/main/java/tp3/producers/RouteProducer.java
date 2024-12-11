@@ -4,6 +4,7 @@ import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
+import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.common.serialization.StringSerializer;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -26,10 +27,10 @@ public class RouteProducer {
         Properties properties = new Properties();
         properties.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, BOOTSTRAP_SERVERS);
         properties.setProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
-        properties.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonConverter.class.getName());
+        properties.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, Serdes);
 
         // create the producer
-        KafkaProducer<String, String> producer = new KafkaProducer<>(properties);
+        KafkaProducer<String, Route> producer = new KafkaProducer<>(properties);
 
         ObjectMapper objectMapper = new ObjectMapper();
 

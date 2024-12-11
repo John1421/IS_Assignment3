@@ -8,7 +8,6 @@ import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.kstream.KStream;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class Streams {
 

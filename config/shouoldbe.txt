@@ -1,3 +1,0 @@
-sink.json
-source.json
-kafka.json
