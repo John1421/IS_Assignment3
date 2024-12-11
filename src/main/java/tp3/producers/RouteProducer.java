@@ -8,6 +8,7 @@ import org.apache.kafka.common.serialization.StringSerializer;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.kafka.connect.json.JsonConverter;
 
 import lombok.extern.slf4j.Slf4j;
 import tp3.models.Route;
@@ -18,14 +19,14 @@ import java.util.Properties;
 public class RouteProducer {
 
     private static final String BOOTSTRAP_SERVERS = "broker1:9092";
-    private static final String TOPIC = "trips-topic";
+    private static final String TOPIC = "routes-topic";
 
     public static void main(String[] args) {
 
         Properties properties = new Properties();
         properties.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, BOOTSTRAP_SERVERS);
         properties.setProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
-        properties.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+        properties.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonConverter.class.getName());
 
         // create the producer
         KafkaProducer<String, String> producer = new KafkaProducer<>(properties);
