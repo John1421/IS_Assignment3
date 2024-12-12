@@ -15,6 +15,7 @@ public class Streams {
 
         String routesTopic = "routes-topic";
         String tripsTopic = "trips-topic";
+        String operatorsTopic = "operatorsFromDatabase";
 
         Properties props = new Properties();
         props.put(StreamsConfig.APPLICATION_ID_CONFIG, "project3");
@@ -27,8 +28,17 @@ public class Streams {
         // -------------------- REQ 1 --------------------
         KStream<String, String> req1Stream = builder.stream(routesTopic);
 
+        // -------------------- REQ 2 --------------------
+        KStream<String, String> operatorsStream = builder.stream(operatorsTopic);// Stream to list route operators
+
+        operatorsStream.foreach((key, value) -> {
+            System.out.println("Supplier: " + value);
+        });
+
+
         KafkaStreams streams = new KafkaStreams(builder.build(), props);
         CountDownLatch latch = new CountDownLatch(1);
+
         Runtime.getRuntime().addShutdownHook(
                 new Thread("streams-shutdown-hook") {
                     @Override
@@ -37,6 +47,7 @@ public class Streams {
                         latch.countDown();
                     }
                 });
+
         try {
             streams.start();
             latch.await();
