@@ -1,0 +1,18 @@
+{
+    "name": "jdbc-sink-suppliers",
+    "config": {
+        "connector.class": "io.confluent.connect.jdbc.      ",
+        "tasks.max": "1",
+        "topics": "results-topic",
+        "connection.url": "jdbc:postgresql://database:5432/project3",
+        "connection.user": "postgres",
+        "connection.password": "My01pass",
+        "insert.mode": "upsert",
+        "auto.create": "true",
+        "auto.evolve": "true",
+        "pk.mode": "record_value",
+        "pk.fields": "name",
+        "value.converter": "org.apache.kafka.connect.storage.StringConverter",
+        "value.converter.schemas.enable": "false"
+    }
+}

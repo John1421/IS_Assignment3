@@ -15,7 +15,7 @@ public class RandomGenerator {
             "Bus", "Train", "Plane", "Car", "Taxi");
 
     private static List<String> OPERATORS = List.of(
-            "SMTUC", "Bolt"); // Uber
+            "SMTUC", "Bolt", "Flixbus", "Rede Expresso");
 
     public static void setOPERATORS(List<String> operators) {
         OPERATORS = operators;

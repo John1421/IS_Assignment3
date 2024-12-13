@@ -28,6 +28,9 @@ kafka-topics.sh --bootstrap-server broker1:9092 --describe --topic test_topic_wi
 # List topics
 kafka-topics.sh --bootstrap-server broker1:9092 --list
 
+# Delete topic
+kafka-topics.sh --delete --topic results-topic --bootstrap-server broker1:9092
+
 # Test the performance of Kafka
 kafka-producer-perf-test.sh --topic test --num-records 10000 --throughput -1 --producer-props bootstrap.servers=broker1:9092 batch.size=1000 acks=1 linger.ms=50 buffer.memory=4294967296 compression.type=none request.timeout.ms=300000 --record-size 1000
 

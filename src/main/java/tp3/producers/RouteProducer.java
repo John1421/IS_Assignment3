@@ -6,10 +6,10 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.common.serialization.StringSerializer;
+import org.apache.kafka.streams.StreamsConfig;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.kafka.connect.json.JsonConverter;
 
 import lombok.extern.slf4j.Slf4j;
 import tp3.models.Route;
@@ -27,19 +27,20 @@ public class RouteProducer {
         Properties properties = new Properties();
         properties.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, BOOTSTRAP_SERVERS);
         properties.setProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
-        properties.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, Serdes);
+        properties.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+        properties.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.String().getClass());
+        properties.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, Serdes.String().getClass());
 
-        // create the producer
-        KafkaProducer<String, Route> producer = new KafkaProducer<>(properties);
+        KafkaProducer<String, String> producer = new KafkaProducer<>(properties);
 
         ObjectMapper objectMapper = new ObjectMapper();
 
         try {
             for (int i = 0; i < 10; i++) {
-                Route route = new Route(); // Create new Trip object
+                Route route = new Route(); // Create new Route object
                 String key = "route_" + route.getId(); // Create key
 
-                String value = objectMapper.writeValueAsString(route); // Serialize Trip object to JSON
+                String value = objectMapper.writeValueAsString(route); // Serialize Route object to JSON
 
                 ProducerRecord<String, String> record = new ProducerRecord<>(TOPIC, key, value);
 
@@ -47,7 +48,7 @@ public class RouteProducer {
                 producer.send(record, (RecordMetadata metadata, Exception e) -> {
                     if (e == null) {
                         // Log success
-                        log.info("Successfully sent trip: \n" +
+                        log.info("Successfully sent route: \n" +
                                 "Key: " + key + "\n" +
                                 "Value: " + value + "\n" +
                                 "Partition: " + metadata.partition() + "\n" +
@@ -57,7 +58,7 @@ public class RouteProducer {
                     }
                 });
 
-                Thread.sleep(1000); // TODO See if needed
+                Thread.sleep(1000); // Simulate delay between messages
             }
         } catch (JsonProcessingException | InterruptedException e) {
             log.error("Error while producing messages", e);
