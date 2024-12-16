@@ -7,12 +7,9 @@ import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.apache.kafka.streams.StreamsConfig;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import lombok.extern.slf4j.Slf4j;
 import tp3.models.Route;
+import tp3.serdes.JsonSerde;
 
 import java.util.Properties;
 
@@ -29,20 +26,16 @@ public class RouteProducer {
         properties.setProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
         properties.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
         properties.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.String().getClass());
-        properties.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, Serdes.String().getClass());
 
-        KafkaProducer<String, String> producer = new KafkaProducer<>(properties);
-
-        ObjectMapper objectMapper = new ObjectMapper();
+        KafkaProducer<String, Route> producer = new KafkaProducer<>(properties,
+                new StringSerializer(), new JsonSerde<>(Route.class));
 
         try {
             for (int i = 0; i < 10; i++) {
                 Route route = new Route(); // Create new Route object
                 String key = "route_" + route.getId(); // Create key
 
-                String value = objectMapper.writeValueAsString(route); // Serialize Route object to JSON
-
-                ProducerRecord<String, String> record = new ProducerRecord<>(TOPIC, key, value);
+                ProducerRecord<String, Route> record = new ProducerRecord<>(TOPIC, key, route);
 
                 // Send data asynchronously
                 producer.send(record, (RecordMetadata metadata, Exception e) -> {
@@ -50,7 +43,7 @@ public class RouteProducer {
                         // Log success
                         log.info("Successfully sent route: \n" +
                                 "Key: " + key + "\n" +
-                                "Value: " + value + "\n" +
+                                "Value: " + route + "\n" +
                                 "Partition: " + metadata.partition() + "\n" +
                                 "Offset: " + metadata.offset());
                     } else {
@@ -60,7 +53,7 @@ public class RouteProducer {
 
                 Thread.sleep(1000); // Simulate delay between messages
             }
-        } catch (JsonProcessingException | InterruptedException e) {
+        } catch (InterruptedException e) {
             log.error("Error while producing messages", e);
         } finally {
             producer.flush();
