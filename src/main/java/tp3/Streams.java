@@ -9,17 +9,18 @@ import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.KTable;
+import org.apache.kafka.streams.kstream.Produced;
+
 import tp3.models.Route;
 import tp3.serdes.RouteSerde;
 
 public class Streams {
+    private static final String routesTopic = "routes-topic";
+    // private static final String tripsTopic = "trips-topic";
+    // private static final String operatorsTopic = "operatorsFromDatabase";
+    private static final String resultsTopic = "results-topic";
 
     public static void main(String[] args) {
-
-        String routesTopic = "routes-topic";
-        String tripsTopic = "trips-topic";
-        String operatorsTopic = "operatorsFromDatabase";
-        String resultsTopic = "results-topic";
 
         Properties properties = new Properties();
         properties.put(StreamsConfig.APPLICATION_ID_CONFIG, "project3");
@@ -42,7 +43,7 @@ public class Streams {
                 .groupBy((key, operator) -> operator) // Group by operator
                 .reduce((aggValue, newValue) -> aggValue); // Remove duplicate operators
 
-        uniqueOperators.toStream().to(resultsTopic);
+        uniqueOperators.toStream().to(resultsTopic, Produced.with(Serdes.String(), Serdes.String()));
 
         // // -------------------- REQ 2 --------------------
         // // Stream to list route operators
@@ -64,7 +65,7 @@ public class Streams {
         CountDownLatch latch = new CountDownLatch(1);
 
         Runtime.getRuntime().addShutdownHook(
-                new Thread("streams-shutdown-hook") {
+                new Thread() {
                     @Override
                     public void run() {
                         streams.close();
