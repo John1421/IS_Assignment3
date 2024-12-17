@@ -8,16 +8,22 @@ import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.kstream.Consumed;
+import org.apache.kafka.streams.kstream.Grouped;
 import org.apache.kafka.streams.kstream.KStream;
+import org.apache.kafka.streams.kstream.KTable;
+import org.apache.kafka.streams.kstream.Materialized;
 import org.apache.kafka.streams.kstream.Produced;
 
 import tp3.models.Operator;
 import tp3.models.Route;
+import tp3.models.SeatsAvailable;
+import tp3.models.Trip;
 import tp3.serdes.JsonSerde;
 
 public class Streams {
 
     private static final String ROUTES_TOPIC = "routes-topic";
+    private static final String TRIPS_TOPIC = "trips-topic";
     private static final String OPERATORS_FROM_DB = "operators-from-db";
 
     public static void main(String[] args) {
@@ -34,6 +40,7 @@ public class Streams {
 
         StreamsBuilder builder = new StreamsBuilder();
 
+        // -------------------- REQ 2 --------------------
         KStream<String, Route> routesStream = builder.stream(ROUTES_TOPIC,
                 Consumed.with(Serdes.String(), new JsonSerde<>(Route.class)));
 
@@ -51,6 +58,9 @@ public class Streams {
             System.out.println("Operator: " + value);
         });
 
+        // -------------------- REQ 5 --------------------
+
+        // END
         KafkaStreams streams = new KafkaStreams(builder.build(), props);
 
         CountDownLatch latch = new CountDownLatch(1);
