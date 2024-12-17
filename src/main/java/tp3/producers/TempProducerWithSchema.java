@@ -1,3 +1,5 @@
+package tp3.producers;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
@@ -24,7 +26,19 @@ public class TempProducerWithSchema {
         try {
             for (int i = 0; i < 10; i++) {
                 String key = "V" + i; // Kafka key
-                String value = objectMapper.writeValueAsString(Map.of("operator", "Operator " + i));
+                Map<String, Object> message = Map.of(
+                    "schema", Map.of(
+                        "type", "struct",
+                        "fields", new Object[] {
+                            Map.of("type", "string", "optional", false, "field", "operator")
+                        },
+                        "optional", false,
+                        "name", "record"
+                    ),
+                    "payload", Map.of("operator", "Operator " + i)
+                );
+
+                String value = objectMapper.writeValueAsString(message);
 
                 ProducerRecord<String, String> record = new ProducerRecord<>(TOPIC, key, value);
 
