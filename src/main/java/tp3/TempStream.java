@@ -40,6 +40,21 @@ public class TempStream {
             return new Operator(value.getOperator());
         }).to(outputTopic, Produced.with(Serdes.String(), new JsonSerde<>(Operator.class)));
 
+        // // -------------------- REQ 2 --------------------
+        // // Stream to list route operators
+        // KStream<String, String> operatorsStream = builder.stream(operatorsTopic);
+
+        // operatorsStream.foreach((key, value) -> {
+        // try {
+        // JsonNode jsonNode = objectMapper.readTree(value);
+        // String supplierName = jsonNode.get("payload").get("name").asText();
+        // System.out.println("Supplier: " + supplierName);
+        // } catch (Exception e) {
+        // System.err.println("Failed to parse message: " + value);
+        // e.printStackTrace();
+        // }
+        // });
+
         KafkaStreams streams = new KafkaStreams(builder.build(), props);
 
         CountDownLatch latch = new CountDownLatch(1);

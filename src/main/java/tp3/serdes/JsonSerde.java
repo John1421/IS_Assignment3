@@ -5,8 +5,6 @@ import org.apache.kafka.common.errors.SerializationException;
 import org.apache.kafka.common.serialization.Deserializer;
 import org.apache.kafka.common.serialization.Serializer;
 import org.apache.kafka.common.serialization.Serde;
-import org.apache.kafka.connect.data.Schema;
-import org.apache.kafka.connect.data.Struct;
 import tp3.models.Operator;
 
 import java.io.IOException;
@@ -33,20 +31,27 @@ public class JsonSerde<T> implements Serializer<T>, Deserializer<T>, Serde<T> {
         }
 
         try {
-            // Check if we need to serialize as a Struct with schema (for JDBC Sink)
-            if (data instanceof Operator) {
+            // If the data is an instance of Operator, serialize it using its schema
+            if (targetType == Operator.class) {
                 Operator operator = (Operator) data;
 
-                // Create the Struct for the Operator class using the pre-defined schema
-                Schema schema = OperatorSchema.OPERATOR_SCHEMA;
-                Struct struct = new Struct(schema)
-                        .put("operator", operator.getOperator()); // Add the operator field to the Struct
+                // Manually create the schema and payload
+                Map<String, Object> operatorWithSchema = Map.of(
+                        "schema", Map.of(
+                                "type", "struct",
+                                "fields", new Object[] {
+                                        Map.of("type", "string", "optional", false, "field", "operator")
+                                },
+                                "optional", false,
+                                "name", "record"),
+                        "payload", Map.of("operator", operator.getOperator())); // Note: Nested under "payload"
 
-                // Serialize the Struct to JSON with schema and payload
-                return OBJECT_MAPPER.writeValueAsBytes(struct);
+                return OBJECT_MAPPER.writeValueAsBytes(operatorWithSchema);
             }
-            // Default case: Serialize the data directly if it's not a custom object
+
+            // Default serialization for non-Operator objects
             return OBJECT_MAPPER.writeValueAsBytes(data);
+
         } catch (Exception e) {
             throw new SerializationException("Error serializing JSON message", e);
         }
@@ -63,15 +68,22 @@ public class JsonSerde<T> implements Serializer<T>, Deserializer<T>, Serde<T> {
         }
 
         try {
-            // Deserialize JSON into a Struct
-            Struct struct = OBJECT_MAPPER.readValue(data, Struct.class);
+            // Deserialize JSON into a Map first
+            Map<String, Object> map = OBJECT_MAPPER.readValue(data, Map.class);
 
-            // Extract the operator field from the Struct and convert it to the Operator
-            // object
-            String operator = struct.getString("operator");
-            Operator operatorObject = new Operator(operator); // Create Operator object from struct
+            if (targetType == Operator.class) {
+                // Extract the "payload" field which contains the actual operator value
+                Map<String, Object> payload = (Map<String, Object>) map.get("payload");
+                String operator = (String) payload.get("operator");
 
-            return (T) operatorObject;
+                // Return an Operator object created from the deserialized value
+                Operator operatorObject = new Operator(operator);
+                return (T) operatorObject;
+            }
+
+            // Default deserialization for non-Operator objects
+            return OBJECT_MAPPER.readValue(data, targetType);
+
         } catch (IOException e) {
             throw new SerializationException("Error deserializing JSON message", e);
         }
@@ -91,4 +103,5 @@ public class JsonSerde<T> implements Serializer<T>, Deserializer<T>, Serde<T> {
     public Deserializer<T> deserializer() {
         return this;
     }
+
 }
