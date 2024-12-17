@@ -5,8 +5,7 @@ import lombok.Data;
 
 @Data
 @AllArgsConstructor
-public class SeatsAvailable {
+public class RouteNumber {
     private long routeId;
-    private int availableSeats;
-    private String operator;
+    private long value;
 }
