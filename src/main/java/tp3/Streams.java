@@ -1,5 +1,6 @@
 package tp3;
 
+import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
 
@@ -9,6 +10,7 @@ import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.kstream.Consumed;
 import org.apache.kafka.streams.kstream.Grouped;
+import org.apache.kafka.streams.kstream.KGroupedStream;
 import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.KTable;
 import org.apache.kafka.streams.kstream.Materialized;
@@ -16,7 +18,6 @@ import org.apache.kafka.streams.kstream.Produced;
 
 import tp3.models.Operator;
 import tp3.models.Route;
-import tp3.models.SeatsAvailable;
 import tp3.models.Trip;
 import tp3.serdes.JsonSerde;
 
@@ -25,6 +26,7 @@ public class Streams {
     private static final String ROUTES_TOPIC = "routes-topic";
     private static final String TRIPS_TOPIC = "trips-topic";
     private static final String OPERATORS_FROM_DB = "operators-from-db";
+    private static final String PASSENGERS_PER_ROUTE_TOPIC = "passengers-per-route-topic";
 
     public static void main(String[] args) {
 
@@ -40,7 +42,9 @@ public class Streams {
 
         StreamsBuilder builder = new StreamsBuilder();
 
-        // -------------------- REQ 2 --------------------
+        // -------------------- REQ 1 --------------------
+        // Add route suppliers to the database
+
         KStream<String, Route> routesStream = builder.stream(ROUTES_TOPIC,
                 Consumed.with(Serdes.String(), new JsonSerde<>(Route.class)));
 
@@ -55,12 +59,36 @@ public class Streams {
                 Consumed.with(Serdes.String(), new JsonSerde<>(Operator.class)));
 
         operatorsStream.foreach((key, value) -> {
-            System.out.println("Operator: " + value);
+            System.out.println("Operator: " + value.getOperator());
         });
 
-        // -------------------- REQ 5 --------------------
 
-        // END
+
+        // -------------------- REQ 4 --------------------
+        // Stream from trips-topic to calculate passengers per route
+        KStream<String, Trip> tripsStream = builder.stream(TRIPS_TOPIC,
+                Consumed.with(Serdes.String(), new JsonSerde<>(Trip.class)));
+
+        // Group by routeId and count passengers
+        KGroupedStream<String, Trip> groupedByRoute = tripsStream.groupBy(
+                (key, trip) -> String.valueOf(trip.getRouteId()) // Use routeId as the grouping key
+        );
+
+        KTable<String, Long> passengersPerRoute = groupedByRoute.count();
+
+        // Convert the output to JSON structure and write to "req4-passengers-route"
+        passengersPerRoute.toStream()
+                .mapValues((routeId, count) -> {
+                    // Create a JSON-compatible Map structure
+                    return Map.of(
+                        "routeId", routeId,
+                        "passengerCount", count
+                    );
+                })
+                .to(PASSENGERS_PER_ROUTE_TOPIC, Produced.with(Serdes.String(), new JsonSerde<>(Map.class))); // TODO: Change so it will work with serdes
+
+
+
         KafkaStreams streams = new KafkaStreams(builder.build(), props);
 
         CountDownLatch latch = new CountDownLatch(1);
