@@ -15,10 +15,12 @@ import tp3.models.Operator;
 import tp3.models.Route;
 import tp3.serdes.JsonSerde;
 
-public class TempStream {
-    public static void main(String[] args) {
+public class Streams {
 
-        String inputTopic = "routes-topic";
+    private static final String ROUTES_TOPIC = "routes-topic";
+    private static final String OPERATORS_FROM_DB = "operators-from-db";
+
+    public static void main(String[] args) {
 
         String outputTopic = "req1";
 
@@ -32,7 +34,7 @@ public class TempStream {
 
         StreamsBuilder builder = new StreamsBuilder();
 
-        KStream<String, Route> routesStream = builder.stream(inputTopic,
+        KStream<String, Route> routesStream = builder.stream(ROUTES_TOPIC,
                 Consumed.with(Serdes.String(), new JsonSerde<>(Route.class)));
 
         routesStream.mapValues(value -> {
@@ -40,20 +42,14 @@ public class TempStream {
             return new Operator(value.getOperator());
         }).to(outputTopic, Produced.with(Serdes.String(), new JsonSerde<>(Operator.class)));
 
-        // // -------------------- REQ 2 --------------------
-        // // Stream to list route operators
-        // KStream<String, String> operatorsStream = builder.stream(operatorsTopic);
+        // -------------------- REQ 2 --------------------
+        // Stream to list route operators
+        KStream<String, Operator> operatorsStream = builder.stream(OPERATORS_FROM_DB,
+                Consumed.with(Serdes.String(), new JsonSerde<>(Operator.class)));
 
-        // operatorsStream.foreach((key, value) -> {
-        // try {
-        // JsonNode jsonNode = objectMapper.readTree(value);
-        // String supplierName = jsonNode.get("payload").get("name").asText();
-        // System.out.println("Supplier: " + supplierName);
-        // } catch (Exception e) {
-        // System.err.println("Failed to parse message: " + value);
-        // e.printStackTrace();
-        // }
-        // });
+        operatorsStream.foreach((key, value) -> {
+            System.out.println("Operator: " + value);
+        });
 
         KafkaStreams streams = new KafkaStreams(builder.build(), props);
 

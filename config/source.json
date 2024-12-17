@@ -9,6 +9,6 @@
         "mode": "bulk",
         "query": "SELECT * FROM operators;",
         "poll.interval.ms": "60000",
-        "topic.prefix": "operatorsFromDatabase"
+        "topic.prefix": "operators-from-db"
     }
 }
