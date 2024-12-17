@@ -5,6 +5,7 @@ import java.util.concurrent.CountDownLatch;
 
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KafkaStreams;
+import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.kstream.Consumed;
@@ -25,6 +26,7 @@ public class Streams {
     private static final String TRIPS_TOPIC = "trips-topic";
     private static final String OPERATORS_FROM_DB = "operators-from-db";
     private static final String PASSENGERS_PER_ROUTE_TOPIC = "passengers-per-route-topic";
+    private static final String AVAILABLE_SEATS_PER_ROUTE_TOPIC = "available-seats-per-route";
 
     public static void main(String[] args) {
 
@@ -74,11 +76,33 @@ public class Streams {
         // Convert the output to JSON structure and write to "req4-passengers-route"
         passengersPerRoute.toStream()
                 .mapValues((routeId, count) -> {
-                    // Create a JSON-compatible Map structure
                     return new RouteNumber(routeId, count);
                 })
                 .to(PASSENGERS_PER_ROUTE_TOPIC,
                         Produced.with(Serdes.Long(), new JsonSerde<>(RouteNumber.class)));
+
+        // -------------------- REQ 5 --------------------
+        // Map to extract routeId as the key and passengerCapacity as the value
+        KStream<Long, Long> routeSeatsStream = routesStream
+                .map((key, route) -> {
+                    System.out.println(
+                            "Processing route: " + route.getId() + " with seats: " + route.getPassengerCapacity());
+                    // Ensure the types match: Long for both key and value
+                    return new KeyValue<>(route.getId(), route.getPassengerCapacity());
+                });
+
+        // Group by routeId and sum the seat counts
+        KTable<Long, Long> availableSeatsPerRoute = routeSeatsStream
+                .groupByKey() // Group by routeId (key)
+                .reduce(Long::sum); // Sum the seat counts
+
+        // Write the results to the output topic
+        availableSeatsPerRoute.toStream()
+                .map((routeId, seatCount) -> {
+                    System.out.println("Route ID: " + routeId + " has available seats: " + seatCount);
+                    return new org.apache.kafka.streams.KeyValue<>(routeId, new RouteNumber(routeId, seatCount));
+                })
+                .to(AVAILABLE_SEATS_PER_ROUTE_TOPIC, Produced.with(Serdes.Long(), new JsonSerde<>(RouteNumber.class)));
 
         KafkaStreams streams = new KafkaStreams(builder.build(), props);
         CountDownLatch latch = new CountDownLatch(1);

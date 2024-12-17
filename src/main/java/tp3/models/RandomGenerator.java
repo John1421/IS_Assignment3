@@ -80,7 +80,7 @@ public class RandomGenerator {
      * 
      * @return a random integer between 1 and 250.
      */
-    public static int getRandomCapacity() {
-        return 1 + RANDOM.nextInt(250);
+    public static Long getRandomCapacity() {
+        return 1 + RANDOM.nextLong(250);
     }
 }

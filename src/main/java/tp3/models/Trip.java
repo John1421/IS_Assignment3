@@ -4,11 +4,11 @@ import lombok.Data;
 
 @Data
 public class Trip {
-    private long id;
-    private long routeId;
+    private Long id;
+    private Long routeId;
     private String origin;
     private String destination;
-    private long passengerId;
+    private Long passengerId;
     private String transportType;
 
     // Constructor with random generation

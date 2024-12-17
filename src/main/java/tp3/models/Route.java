@@ -6,8 +6,8 @@ import lombok.Data;
 @Data
 @AllArgsConstructor
 public class Route {
-    private long id;
-    private int passengerCapacity;
+    private Long id;
+    private Long passengerCapacity;
     private String origin;
     private String destination;
     private String transportType;
