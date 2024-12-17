@@ -1,6 +1,6 @@
 {
 	"name": "Maven+Java+Kafka+PostgreSQL",
-	"dockerComposeFile": "docker-compose-cluster.yml",
+	"dockerComposeFile": "docker-compose-standalone.yml",
 	"service": "command-line",
 	"workspaceFolder": "/workspace",
 	"customizations": {

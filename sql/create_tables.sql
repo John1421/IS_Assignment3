@@ -1,7 +1,7 @@
-CREATE TABLE IF NOT EXISTS operators (
-  name varchar(255) NOT NULL, 
-  PRIMARY KEY (name)
-);
+-- CREATE TABLE IF NOT EXISTS operators (
+--   operator varchar(255) NOT NULL, 
+--   PRIMARY KEY (operator)
+-- );
 
-INSERT INTO operators (name) VALUES ('SMTUC');
-INSERT INTO operators (name) VALUES ('Bolt');
+-- INSERT INTO operators (operator) VALUES ('SMTUC');
+-- INSERT INTO operators (operator) VALUES ('Bolt');

@@ -11,20 +11,20 @@ import org.apache.kafka.streams.kstream.Consumed;
 import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.Produced;
 
+import tp3.models.Operator;
 import tp3.models.Route;
 import tp3.serdes.JsonSerde;
-import tp3.serdes.RouteSerde;
 
 public class TempStream {
     public static void main(String[] args) {
 
         String inputTopic = "routes-topic";
 
-        String outputTopic = "end";
+        String outputTopic = "req1";
 
         Properties props = new Properties();
 
-        props.put(StreamsConfig.APPLICATION_ID_CONFIG, "word-count-example");
+        props.put(StreamsConfig.APPLICATION_ID_CONFIG, "project3");
 
         props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "broker1:9092");
 
@@ -32,13 +32,13 @@ public class TempStream {
 
         StreamsBuilder builder = new StreamsBuilder();
 
-        KStream<String, Route> textLines = builder.stream(inputTopic,
+        KStream<String, Route> routesStream = builder.stream(inputTopic,
                 Consumed.with(Serdes.String(), new JsonSerde<>(Route.class)));
 
-        textLines.mapValues(value -> {
+        routesStream.mapValues(value -> {
             System.out.println("Read from routes-topic: Value = " + value);
-            return value.getOperator();
-        }).to(outputTopic, Produced.with(Serdes.String(), Serdes.String()));
+            return new Operator(value.getOperator());
+        }).to(outputTopic, Produced.with(Serdes.String(), new JsonSerde<>(Operator.class)));
 
         KafkaStreams streams = new KafkaStreams(builder.build(), props);
 

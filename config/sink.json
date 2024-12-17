@@ -1,18 +1,21 @@
 {
-    "name": "jdbc-sink-suppliers",
+    "name": "jdbc-sink-req1",
     "config": {
-        "connector.class": "io.confluent.connect.jdbc.      ",
+        "connector.class": "io.confluent.connect.jdbc.JdbcSinkConnector",
         "tasks.max": "1",
-        "topics": "results-topic",
+        "topics": "req1",
         "connection.url": "jdbc:postgresql://database:5432/project3",
         "connection.user": "postgres",
         "connection.password": "My01pass",
         "insert.mode": "upsert",
         "auto.create": "true",
         "auto.evolve": "true",
+        "table.name.format": "operators",
         "pk.mode": "record_value",
-        "pk.fields": "name",
-        "value.converter": "org.apache.kafka.connect.storage.StringConverter",
+        "pk.fields": "operator",
+        "key.converter": "org.apache.kafka.connect.storage.StringConverter",
+        "key.converter.schemas.enable": "false",
+        "value.converter": "org.apache.kafka.connect.json.JsonConverter",
         "value.converter.schemas.enable": "false"
     }
 }
