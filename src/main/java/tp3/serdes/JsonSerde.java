@@ -6,6 +6,7 @@ import org.apache.kafka.common.serialization.Deserializer;
 import org.apache.kafka.common.serialization.Serializer;
 import org.apache.kafka.common.serialization.Serde;
 import tp3.models.Operator;
+import tp3.models.Route;
 
 import java.io.IOException;
 import java.util.Map;
@@ -48,6 +49,33 @@ public class JsonSerde<T> implements Serializer<T>, Deserializer<T>, Serde<T> {
 
                 return OBJECT_MAPPER.writeValueAsBytes(operatorWithSchema);
             }
+            if (targetType == Route.class) {
+                Route route = (Route) data;
+
+                // Manually create the schema and payload for the Route class
+                Map<String, Object> routeWithSchema = Map.of(
+                        "schema", Map.of(
+                                "type", "struct",
+                                "fields", new Object[] {
+                                        Map.of("type", "int64", "optional", false, "field", "id"),
+                                        Map.of("type", "int32", "optional", false, "field", "passengerCapacity"),
+                                        Map.of("type", "string", "optional", false, "field", "origin"),
+                                        Map.of("type", "string", "optional", false, "field", "destination"),
+                                        Map.of("type", "string", "optional", false, "field", "transportType"),
+                                        Map.of("type", "string", "optional", false, "field", "operator")
+                                },
+                                "optional", false,
+                                "name", "route_record"),
+                        "payload", Map.of(
+                                "id", route.getId(),
+                                "passengerCapacity", route.getPassengerCapacity(),
+                                "origin", route.getOrigin(),
+                                "destination", route.getDestination(),
+                                "transportType", route.getTransportType(),
+                                "operator", route.getOperator()));
+
+                return OBJECT_MAPPER.writeValueAsBytes(routeWithSchema);
+            }
 
             // Default serialization for non-Operator objects
             return OBJECT_MAPPER.writeValueAsBytes(data);
@@ -79,6 +107,22 @@ public class JsonSerde<T> implements Serializer<T>, Deserializer<T>, Serde<T> {
                 // Return an Operator object created from the deserialized value
                 Operator operatorObject = new Operator(operator);
                 return (T) operatorObject;
+            }
+            if (targetType == Route.class) {
+                // Extract the "payload" field which contains the actual Route values
+                Map<String, Object> payload = (Map<String, Object>) map.get("payload");
+
+                // Extract individual fields from the payload
+                long id = ((Number) payload.get("id")).longValue();
+                int passengerCapacity = ((Number) payload.get("passengerCapacity")).intValue();
+                String origin = (String) payload.get("origin");
+                String destination = (String) payload.get("destination");
+                String transportType = (String) payload.get("transportType");
+                String operator = (String) payload.get("operator");
+
+                // Return a Route object created from the deserialized values
+                Route routeObject = new Route(id, passengerCapacity, origin, destination, transportType, operator);
+                return (T) routeObject;
             }
 
             // Default deserialization for non-Operator objects
