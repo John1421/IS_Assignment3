@@ -9,9 +9,11 @@ import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.kstream.Consumed;
+import org.apache.kafka.streams.kstream.Grouped;
 import org.apache.kafka.streams.kstream.KGroupedStream;
 import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.KTable;
+import org.apache.kafka.streams.kstream.Materialized;
 import org.apache.kafka.streams.kstream.Produced;
 
 import tp3.models.Operator;
@@ -69,17 +71,22 @@ public class Streams {
 
         // Group by routeId and count passengers
         KGroupedStream<Long, Trip> tripsGroupedByRoute = tripsStream.groupBy(
-                (key, trip) -> trip.getRouteId() // Use routeId as the grouping key
+                (key, trip) -> {
+                    if (trip != null) {
+                    System.out.println("Trip processing: " + trip.getId()); // TODO: remove logs at the end
+                    return trip.getRouteId();
+                    }
+                    return null;
+                }, // Use routeId as the grouping key
+                Grouped.with(Serdes.Long(), new JsonSerde<>(Trip.class)) // Specify the serdes for grouping
         );
 
-        KTable<Long, Long> passengersPerRoute = tripsGroupedByRoute.count();
-        // Convert the output to JSON structure and write to "req4-passengers-route"
+        // KTable for passengers per route
+        KTable<Long, Long> passengersPerRoute = tripsGroupedByRoute
+                .count(Materialized.with(Serdes.Long(), Serdes.Long()));
         passengersPerRoute.toStream()
-                .mapValues((routeId, count) -> {
-                    return new RouteNumber(routeId, count);
-                })
-                .to(PASSENGERS_PER_ROUTE_TOPIC,
-                        Produced.with(Serdes.Long(), new JsonSerde<>(RouteNumber.class)));
+                .mapValues((routeId, count) -> new RouteNumber(routeId, count))
+                .to(PASSENGERS_PER_ROUTE_TOPIC, Produced.with(Serdes.Long(), new JsonSerde<>(RouteNumber.class)));
 
         // -------------------- REQ 5 --------------------
         // Map to extract routeId as the key and passengerCapacity as the value
