@@ -29,6 +29,7 @@ public class Streams {
     private static final String OPERATORS_FROM_DB = "operators-from-db";
     private static final String PASSENGERS_PER_ROUTE_TOPIC = "passengers-per-route-topic";
     private static final String AVAILABLE_SEATS_PER_ROUTE_TOPIC = "available-seats-per-route";
+    private static final String OCCUPANCY_PER_ROUTE_TOPIC = "occupancy-per-route-topic";
 
     public static void main(String[] args) {
 
@@ -73,8 +74,8 @@ public class Streams {
         KGroupedStream<Long, Trip> tripsGroupedByRoute = tripsStream.groupBy(
                 (key, trip) -> {
                     if (trip != null) {
-                    System.out.println("Trip processing: " + trip.getId()); // TODO: remove logs at the end
-                    return trip.getRouteId();
+                        System.out.println("Trip processing: " + trip.getId()); // TODO: remove logs at the end
+                        return trip.getRouteId();
                     }
                     return null;
                 }, // Use routeId as the grouping key
@@ -110,6 +111,20 @@ public class Streams {
                     return new org.apache.kafka.streams.KeyValue<>(routeId, new RouteNumber(routeId, seatCount));
                 })
                 .to(AVAILABLE_SEATS_PER_ROUTE_TOPIC, Produced.with(Serdes.Long(), new JsonSerde<>(RouteNumber.class)));
+
+        // -------------------- REQ 6 --------------------
+        // Compute occupancy percentage per route
+        KTable<Long, Double> occupancyPerRoute = passengersPerRoute.join(
+                availableSeatsPerRoute,
+                (passengerCount, seatCount) -> {
+                    if (seatCount == 0) {
+                        return 0.0; // Avoid division by zero
+                    }
+                    return ((double) passengerCount / seatCount) * 100;
+                },
+                Materialized.with(Serdes.Long(), Serdes.Double()));
+        occupancyPerRoute.toStream().to(OCCUPANCY_PER_ROUTE_TOPIC, Produced.with(Serdes.Long(), Serdes.Double()));
+
 
         KafkaStreams streams = new KafkaStreams(builder.build(), props);
         CountDownLatch latch = new CountDownLatch(1);
