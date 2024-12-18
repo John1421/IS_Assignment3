@@ -8,11 +8,9 @@ import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.apache.kafka.streams.StreamsConfig;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import lombok.extern.slf4j.Slf4j;
 import tp3.models.Trip;
+import tp3.serdes.JsonSerde;
 
 import java.util.Properties;
 
@@ -31,18 +29,15 @@ public class TripProducer {
         properties.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.String().getClass());
         properties.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, Serdes.String().getClass());
 
-        KafkaProducer<String, String> producer = new KafkaProducer<>(properties);
-
-        ObjectMapper objectMapper = new ObjectMapper();
+        KafkaProducer<String, Trip> producer = new KafkaProducer<>(properties,
+                new StringSerializer(), new JsonSerde<>(Trip.class));
 
         try {
             for (int i = 0; i < 10; i++) {
                 Trip trip = new Trip(); // Create new Trip object
                 String key = "trip_" + trip.getId(); // Create key
 
-                String value = objectMapper.writeValueAsString(trip); // Serialize Trip object to JSON
-
-                ProducerRecord<String, String> record = new ProducerRecord<>(TOPIC, key, value);
+                ProducerRecord<String, Trip> record = new ProducerRecord<>(TOPIC, key, trip);
 
                 // Send data asynchronously
                 producer.send(record, (RecordMetadata metadata, Exception e) -> {
@@ -50,7 +45,7 @@ public class TripProducer {
                         // Log success
                         log.info("Successfully sent trip: \n" +
                                 "Key: " + key + "\n" +
-                                "Value: " + value + "\n" +
+                                "Value: " + trip + "\n" +
                                 "Partition: " + metadata.partition() + "\n" +
                                 "Offset: " + metadata.offset());
                     } else {
@@ -58,9 +53,9 @@ public class TripProducer {
                     }
                 });
 
-                Thread.sleep(1000); // TODO See if needed
+                Thread.sleep(1000);
             }
-        } catch (JsonProcessingException | InterruptedException e) {
+        } catch (InterruptedException e) {
             log.error("Error while producing messages", e);
         } finally {
             producer.flush();
