@@ -23,7 +23,6 @@ public class TripProducer {
     private static final String BOOTSTRAP_SERVERS = "broker1:9092";
     private static final String TOPIC = "trips-topic";
 
-    @SuppressWarnings("resource")
     public static void main(String[] args) {
         Properties properties = new Properties();
         properties.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, BOOTSTRAP_SERVERS);
@@ -41,6 +40,7 @@ public class TripProducer {
 
         if (existingRouteIds.isEmpty()) {
             log.warn("No route IDs found in the topic. Exiting.");
+            producer.close();
             return;
         }
 

@@ -28,8 +28,12 @@ public class Streams {
     private static final String TRIPS_TOPIC = "trips-topic";
     private static final String OPERATORS_FROM_DB = "operators-from-db";
     private static final String PASSENGERS_PER_ROUTE_TOPIC = "passengers-per-route-topic";
+<<<<<<< HEAD
     private static final String AVAILABLE_SEATS_PER_ROUTE_TOPIC = "available-seats-per-route";
     private static final String OCCUPANCY_PER_ROUTE_TOPIC = "occupancy-per-route-topic";
+=======
+    private static final String AVAILABLE_SEATS_PER_ROUTE_TOPIC = "req5";
+>>>>>>> 79217d7 (Req5 working)
 
     public static void main(String[] args) {
 
@@ -90,25 +94,36 @@ public class Streams {
                 .to(PASSENGERS_PER_ROUTE_TOPIC, Produced.with(Serdes.Long(), new JsonSerde<>(RouteNumber.class)));
 
         // -------------------- REQ 5 --------------------
-        // Map to extract routeId as the key and passengerCapacity as the value
-        KStream<Long, Long> routeSeatsStream = routesStream
-                .map((key, route) -> {
-                    System.out.println(
-                            "Processing route: " + route.getId() + " with seats: " + route.getPassengerCapacity());
-                    // Ensure the types match: Long for both key and value
-                    return new KeyValue<>(route.getId(), route.getPassengerCapacity());
-                });
+        // Map routesStream to extract routeId as key and passengerCapacity as value
+        KGroupedStream<Long, Long> routesGroupedByRoute = routesStream
+                .map((key, route) -> KeyValue.pair(route.getId(), route.getPassengerCapacity())) // Use routeId as key
+                                                                                                 // and capacity as
+                                                                                                 // value
+                .groupByKey(Grouped.with(Serdes.Long(), Serdes.Long())); // Group by routeId
 
-        // Group by routeId and sum the seat counts
-        KTable<Long, Long> availableSeatsPerRoute = routeSeatsStream
-                .groupByKey() // Group by routeId (key)
-                .reduce(Long::sum); // Sum the seat counts
+        // Reduce to calculate total capacity per route
+        KTable<Long, Long> totalCapacityPerRoute = routesGroupedByRoute.reduce(
+                Long::sum, // Sum passenger capacity for the same routeId
+                Materialized.with(Serdes.Long(), Serdes.Long()) // Materialize the result
+        );
 
-        // Write the results to the output topic
+        // Join totalCapacityPerRoute with passengersPerRoute to calculate available
+        // seats
+        KTable<Long, Long> availableSeatsPerRoute = totalCapacityPerRoute.leftJoin(
+                passengersPerRoute,
+                (capacity, passengers) -> {
+                    if (passengers == null)
+                        return capacity; // No passengers recorded
+                    return capacity - passengers; // Calculate available seats
+                },
+                Materialized.with(Serdes.Long(), Serdes.Long()) // Materialize the result
+        );
+
+        // Write the result to the output topic
         availableSeatsPerRoute.toStream()
                 .map((routeId, seatCount) -> {
                     System.out.println("Route ID: " + routeId + " has available seats: " + seatCount);
-                    return new org.apache.kafka.streams.KeyValue<>(routeId, new RouteNumber(routeId, seatCount));
+                    return KeyValue.pair(routeId, new RouteNumber(routeId, seatCount));
                 })
                 .to(AVAILABLE_SEATS_PER_ROUTE_TOPIC, Produced.with(Serdes.Long(), new JsonSerde<>(RouteNumber.class)));
 
