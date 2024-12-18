@@ -18,7 +18,7 @@ import org.apache.kafka.streams.kstream.Produced;
 
 import tp3.models.Operator;
 import tp3.models.Route;
-import tp3.models.RouteNumber;
+import tp3.models.Number;
 import tp3.models.Trip;
 import tp3.serdes.JsonSerde;
 
@@ -30,6 +30,7 @@ public class Streams {
     private static final String PASSENGERS_PER_ROUTE_TOPIC = "passengers-per-route-topic";
     private static final String AVAILABLE_SEATS_PER_ROUTE_TOPIC = "req5";
     private static final String OCCUPANCY_PER_ROUTE_TOPIC = "occupancy-per-route-topic";
+    private static final String TOTAL_PASSANGERS_TOPIC = "req7";
 
     public static void main(String[] args) {
 
@@ -86,8 +87,8 @@ public class Streams {
         KTable<Long, Long> passengersPerRoute = tripsGroupedByRoute
                 .count(Materialized.with(Serdes.Long(), Serdes.Long()));
         passengersPerRoute.toStream()
-                .mapValues((routeId, count) -> new RouteNumber(routeId, count))
-                .to(PASSENGERS_PER_ROUTE_TOPIC, Produced.with(Serdes.Long(), new JsonSerde<>(RouteNumber.class)));
+                .mapValues((routeId, count) -> new Number(routeId, count))
+                .to(PASSENGERS_PER_ROUTE_TOPIC, Produced.with(Serdes.Long(), new JsonSerde<>(Number.class)));
 
         // -------------------- REQ 5 --------------------
         // Map routesStream to extract routeId as key and passengerCapacity as value
@@ -119,9 +120,9 @@ public class Streams {
         availableSeatsPerRoute.toStream()
                 .map((routeId, seatCount) -> {
                     System.out.println("Route ID: " + routeId + " has available seats: " + seatCount);
-                    return KeyValue.pair(routeId, new RouteNumber(routeId, seatCount));
+                    return KeyValue.pair(routeId, new Number(routeId, seatCount));
                 })
-                .to(AVAILABLE_SEATS_PER_ROUTE_TOPIC, Produced.with(Serdes.Long(), new JsonSerde<>(RouteNumber.class)));
+                .to(AVAILABLE_SEATS_PER_ROUTE_TOPIC, Produced.with(Serdes.Long(), new JsonSerde<>(Number.class)));
 
         // -------------------- REQ 6 --------------------
         // Compute occupancy percentage per route
@@ -136,6 +137,24 @@ public class Streams {
                 Materialized.with(Serdes.Long(), Serdes.Double()));
         occupancyPerRoute.toStream().to(OCCUPANCY_PER_ROUTE_TOPIC, Produced.with(Serdes.Long(), Serdes.Double()));
 
+        // -------------------- REQ 7 --------------------
+        // Calculate total passengers from the passengersPerRoute table
+        KTable<String, Number> totalPassengers = passengersPerRoute
+                .toStream()
+                .map((routeId, count) -> KeyValue.pair("total", count)) // Use a constant key "total" for all records
+                .groupByKey(Grouped.with(Serdes.String(), Serdes.Long())) // Group all records by the constant key
+                .reduce(
+                        Long::sum, // Sum passenger counts for the constant key
+                        Materialized.with(Serdes.String(), Serdes.Long()) // Materialize the result
+                ).mapValues((value) -> {
+                    return new Number(0, value);
+                });
+
+        // Write the total passenger count to a new topic
+        totalPassengers.toStream().to(TOTAL_PASSANGERS_TOPIC,
+                Produced.with(Serdes.String(), new JsonSerde<>(Number.class)));
+
+        // END
         KafkaStreams streams = new KafkaStreams(builder.build(), props);
         CountDownLatch latch = new CountDownLatch(1);
         Runtime.getRuntime().addShutdownHook(

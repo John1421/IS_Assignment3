@@ -12,7 +12,7 @@
         "auto.evolve": "true",
         "table.name.format": "req4",
         "pk.mode": "record_value",
-        "pk.fields": "routeId",
+        "pk.fields": "id",
         "key.converter": "org.apache.kafka.connect.storage.StringConverter",
         "key.converter.schemas.enable": "false",
         "value.converter": "org.apache.kafka.connect.json.JsonConverter",

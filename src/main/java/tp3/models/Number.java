@@ -5,7 +5,7 @@ import lombok.Data;
 
 @Data
 @AllArgsConstructor
-public class RouteNumber {
-    private long routeId;
+public class Number {
+    private long id;
     private long value;
 }
