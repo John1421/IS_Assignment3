@@ -19,6 +19,7 @@ import org.apache.kafka.streams.kstream.Produced;
 import tp3.models.Operator;
 import tp3.models.Route;
 import tp3.models.Number;
+import tp3.models.RouteOccupancy;
 import tp3.models.Trip;
 import tp3.serdes.JsonSerde;
 
@@ -126,35 +127,25 @@ public class Streams {
 
         // -------------------- REQ 6 --------------------
         // Compute occupancy percentage per route
-        KTable<Long, Double> occupancyPerRoute = passengersPerRoute.join(
+        KTable<Long, Float> occupancyPerRoute = passengersPerRoute.join(
                 availableSeatsPerRoute,
                 (passengerCount, seatCount) -> {
-                    if (seatCount == 0) {
-                        return 0.0; // Avoid division by zero
+                    if (seatCount == null || seatCount == 0) {
+                        return (float) 0.0; // Avoid division by zero
                     }
-                    return ((double) passengerCount / seatCount) * 100;
+                    return ((float) passengerCount / (passengerCount + seatCount)) * 100;
                 },
-                Materialized.with(Serdes.Long(), Serdes.Double()));
-        occupancyPerRoute.toStream().to(OCCUPANCY_PER_ROUTE_TOPIC, Produced.with(Serdes.Long(), Serdes.Double()));
+                Materialized.with(Serdes.Long(), Serdes.Float())
+        );
 
-        // -------------------- REQ 7 --------------------
-        // Calculate total passengers from the passengersPerRoute table
-        KTable<String, Number> totalPassengers = passengersPerRoute
-                .toStream()
-                .map((routeId, count) -> KeyValue.pair("total", count)) // Use a constant key "total" for all records
-                .groupByKey(Grouped.with(Serdes.String(), Serdes.Long())) // Group all records by the constant key
-                .reduce(
-                        Long::sum, // Sum passenger counts for the constant key
-                        Materialized.with(Serdes.String(), Serdes.Long()) // Materialize the result
-                ).mapValues((value) -> {
-                    return new Number(0, value);
-                });
+        occupancyPerRoute.toStream()
+                .map((routeId, occupancyPercentage) -> {
+                    System.out.println("Occupancy for route " + routeId + " is " + occupancyPercentage + "%");
+                    return KeyValue.pair(routeId, new RouteOccupancy(routeId, occupancyPercentage));
+                })
+                .to(OCCUPANCY_PER_ROUTE_TOPIC, Produced.with(Serdes.Long(), new JsonSerde<>(RouteOccupancy.class)));
 
-        // Write the total passenger count to a new topic
-        totalPassengers.toStream().to(TOTAL_PASSANGERS_TOPIC,
-                Produced.with(Serdes.String(), new JsonSerde<>(Number.class)));
-
-        // END
+        
         KafkaStreams streams = new KafkaStreams(builder.build(), props);
         CountDownLatch latch = new CountDownLatch(1);
         Runtime.getRuntime().addShutdownHook(

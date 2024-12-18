@@ -101,9 +101,9 @@ public class JsonSerde<T> implements Serializer<T>, Deserializer<T>, Serde<T> {
         } else if (type == long.class || type == Long.class) {
             return "int64";
         } else if (type == float.class || type == Float.class) {
-            return "float32";
+            return "float";
         } else if (type == double.class || type == Double.class) {
-            return "float64";
+            return "double";
         } else if (type == boolean.class || type == Boolean.class) {
             return "boolean";
         } else {

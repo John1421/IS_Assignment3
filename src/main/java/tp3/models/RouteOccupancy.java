@@ -6,6 +6,6 @@ import lombok.Data;
 @Data
 @AllArgsConstructor
 public class RouteOccupancy {
-    private long routeId;
-    private double occupancy;
+    private Long routeId;
+    private Float occupancyPercentage;
 }
