@@ -28,12 +28,8 @@ public class Streams {
     private static final String TRIPS_TOPIC = "trips-topic";
     private static final String OPERATORS_FROM_DB = "operators-from-db";
     private static final String PASSENGERS_PER_ROUTE_TOPIC = "passengers-per-route-topic";
-<<<<<<< HEAD
-    private static final String AVAILABLE_SEATS_PER_ROUTE_TOPIC = "available-seats-per-route";
-    private static final String OCCUPANCY_PER_ROUTE_TOPIC = "occupancy-per-route-topic";
-=======
     private static final String AVAILABLE_SEATS_PER_ROUTE_TOPIC = "req5";
->>>>>>> 79217d7 (Req5 working)
+    private static final String OCCUPANCY_PER_ROUTE_TOPIC = "occupancy-per-route-topic";
 
     public static void main(String[] args) {
 
@@ -139,7 +135,6 @@ public class Streams {
                 },
                 Materialized.with(Serdes.Long(), Serdes.Double()));
         occupancyPerRoute.toStream().to(OCCUPANCY_PER_ROUTE_TOPIC, Produced.with(Serdes.Long(), Serdes.Double()));
-
 
         KafkaStreams streams = new KafkaStreams(builder.build(), props);
         CountDownLatch latch = new CountDownLatch(1);
