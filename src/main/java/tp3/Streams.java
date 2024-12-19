@@ -236,8 +236,6 @@ public class Streams {
                 KGroupedStream<String, Trip> tripsGroupedByTransportType = tripsStream.groupBy(
                                 (key, trip) -> {
                                         if (trip != null) {
-                                                System.out.println("Grouping trips by transport type: "
-                                                                + trip.getTransportType());
                                                 return trip.getTransportType(); // Group by transport type
                                         }
                                         return null;
@@ -283,10 +281,6 @@ public class Streams {
 
                 // -------------------- REQ 11 --------------------
                 // Get the transport type with the highest number of served passengers
-
-                KGroupedStream<String, Trip> tripsGroupedByTransportType = tripsStream.groupBy(
-                                (key, trip) -> trip.getTransportType(), // Group by transport type
-                                Grouped.with(Serdes.String(), new JsonSerde<>(Trip.class)));
 
                 // Count passengers per transport type
                 KTable<String, Long> passengersPerTransportType = tripsGroupedByTransportType.count(
