@@ -47,7 +47,7 @@ public class TripProducer {
         Random random = new Random();
 
         try {
-            for (int i = 0; i < 10; i++) {
+            for (int i = 0; i < 100; i++) {
                 Long routeId = existingRouteIds.get(random.nextInt(existingRouteIds.size())); // Pick a random route ID
                 Trip trip = new Trip(); // Create new Trip object
                 trip.setRouteId(routeId); // Assign valid routeId

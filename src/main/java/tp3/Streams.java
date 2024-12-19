@@ -18,6 +18,7 @@ import org.apache.kafka.streams.kstream.Produced;
 
 import tp3.models.Operator;
 import tp3.models.Route;
+import tp3.models.NameNumber;
 import tp3.models.Number;
 import tp3.models.RouteOccupancy;
 import tp3.models.Trip;
@@ -210,7 +211,73 @@ public class Streams {
                                                 Produced.with(Serdes.String(), new JsonSerde<>(RouteOccupancy.class)));
 
                 // -------------------- REQ 10 --------------------
-                // Get total passengers per transport type
+                // Calculate the average number of passengers per transport type
+
+                // Group routes by transport type
+                KGroupedStream<String, Route> routesGroupedByTransportType = routesStream.groupBy(
+                                (key, route) -> {
+                                        if (route != null) {
+                                                System.out.println("Grouping routes by transport type: "
+                                                                + route.getTransportType());
+                                                return route.getTransportType(); // Group by transport type
+                                        }
+                                        return null;
+                                },
+                                Grouped.with(Serdes.String(), new JsonSerde<>(Route.class)));
+
+                // Count distinct routes per transport type
+                KTable<String, Long> totalRoutesPerTransportType = routesGroupedByTransportType.count(
+                                Materialized.with(Serdes.String(), Serdes.Long()) // Count distinct routes
+                );
+
+                // Group trips by transport type
+                KGroupedStream<String, Trip> tripsGroupedByTransportType = tripsStream.groupBy(
+                                (key, trip) -> {
+                                        if (trip != null) {
+                                                System.out.println("Grouping trips by transport type: "
+                                                                + trip.getTransportType());
+                                                return trip.getTransportType(); // Group by transport type
+                                        }
+                                        return null;
+                                },
+                                Grouped.with(Serdes.String(), new JsonSerde<>(Trip.class)));
+
+                // Calculate total passengers per transport type
+                KTable<String, Long> totalPassengersPerTransportType = tripsGroupedByTransportType.aggregate(
+                                () -> 0L,
+                                (key, trip, aggregate) -> {
+                                        System.out.println("Adding passenger for transport type: " + key);
+                                        return aggregate + 1; // Increment for each passenger
+                                },
+                                Materialized.with(Serdes.String(), Serdes.Long()));
+
+                // Join totalPassengersPerTransportType with totalRoutesPerTransportType
+                KTable<String, Double> averagePassengersPerTransportType = totalPassengersPerTransportType.join(
+                                totalRoutesPerTransportType,
+                                (totalPassengerCount, totalRouteCount) -> {
+                                        if (totalRouteCount == 0) {
+                                                System.out.println(
+                                                                "No routes for transport type, setting average to 0.0");
+                                                return 0.0; // Avoid division by zero
+                                        }
+                                        System.out.println(
+                                                        "Calculating average for transport type: totalPassengerCount="
+                                                                        + totalPassengerCount + ", totalRouteCount="
+                                                                        + totalRouteCount);
+                                        return (double) totalPassengerCount / totalRouteCount; // Calculate the average
+                                },
+                                Materialized.with(Serdes.String(), Serdes.Double()) // Materialize the result
+                );
+
+                // Write the result to a new topic
+                averagePassengersPerTransportType.toStream()
+                                .map((transportType, average) -> {
+                                        System.out.println("Average passengers for " + transportType + ": " + average);
+                                        return KeyValue.pair(transportType,
+                                                        new NameNumber(transportType, average.longValue()));
+                                })
+                                .to(AVERAGE_PASSENGERS_PER_TRANSPORT_TYPE,
+                                                Produced.with(Serdes.String(), new JsonSerde<>(NameNumber.class)));
 
                 KafkaStreams streams = new KafkaStreams(builder.build(), props);
                 CountDownLatch latch = new CountDownLatch(1);
