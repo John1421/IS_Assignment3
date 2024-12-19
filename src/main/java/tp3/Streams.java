@@ -21,6 +21,7 @@ import tp3.models.Route;
 import tp3.models.NameNumber;
 import tp3.models.Number;
 import tp3.models.RouteOccupancy;
+import tp3.models.TransporType;
 import tp3.models.Trip;
 import tp3.serdes.JsonSerde;
 
@@ -37,6 +38,7 @@ public class Streams {
         private static final String TOTAL_SEATING_CAPACITY_TOPIC = "req8-topic";
         private static final String OCCUPANCY_PERCENTAGE_TOTAL_TOPIC = "req9-topic";
         private static final String AVERAGE_PASSENGERS_PER_TRANSPORT_TYPE = "req10-topic";
+        private static final String TRANSPORT_TYPE_WITH_MOST_PASSANGERS = "req11-topic";
 
         public static void main(String[] args) {
 
@@ -278,6 +280,34 @@ public class Streams {
                                 })
                                 .to(AVERAGE_PASSENGERS_PER_TRANSPORT_TYPE,
                                                 Produced.with(Serdes.String(), new JsonSerde<>(NameNumber.class)));
+
+                // -------------------- REQ 11 --------------------
+                // Get the transport type with the highest number of served passengers
+
+                KGroupedStream<String, Trip> tripsGroupedByTransportType = tripsStream.groupBy(
+                                (key, trip) -> trip.getTransportType(), // Group by transport type
+                                Grouped.with(Serdes.String(), new JsonSerde<>(Trip.class)));
+
+                // Count passengers per transport type
+                KTable<String, Long> passengersPerTransportType = tripsGroupedByTransportType.count(
+                                Materialized.with(Serdes.String(), Serdes.Long()));
+
+                // Find the maximum transport type
+                KTable<String, Long> maxTransportType = passengersPerTransportType
+                                .toStream()
+                                .groupByKey(Grouped.with(Serdes.String(), Serdes.Long()))
+                                .reduce((currentValue, newValue) -> {
+                                        return Math.max(currentValue, newValue);
+                                });
+
+                // Output the result
+                maxTransportType.toStream()
+                                .map((key, value) -> {
+                                        System.out.println("Transport type with the highest passengers: " + key);
+                                        return KeyValue.pair("highest", new TransporType("highest", key));
+                                })
+                                .to(TRANSPORT_TYPE_WITH_MOST_PASSANGERS,
+                                                Produced.with(Serdes.String(), new JsonSerde<>(TransporType.class)));
 
                 KafkaStreams streams = new KafkaStreams(builder.build(), props);
                 CountDownLatch latch = new CountDownLatch(1);
