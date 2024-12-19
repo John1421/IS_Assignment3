@@ -51,7 +51,7 @@ public class RouteProducer {
                     }
                 });
 
-                Thread.sleep(1000); // Simulate delay between messages
+                Thread.sleep(100); // Simulate delay between messages
             }
         } catch (InterruptedException e) {
             log.error("Error while producing messages", e);
