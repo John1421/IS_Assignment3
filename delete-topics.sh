@@ -1,5 +1,13 @@
 #!/bin/bash
 
+# if there is an argument just delete that topic
+if [ $# -gt 0 ]; then
+  TOPIC=$1
+  echo "Deleting topic: $TOPIC"
+  kafka-topics.sh --delete --topic "$TOPIC" --bootstrap-server broker1:9092
+  exit 0
+fi
+
 # Obtém a lista de todos os tópicos Kafka
 TOPICS=$(kafka-topics.sh --bootstrap-server broker1:9092 --list)
 
