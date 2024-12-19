@@ -34,6 +34,7 @@ public class Streams {
         private static final String OCCUPANCY_PER_ROUTE_TOPIC = "req6-topic";
         private static final String TOTAL_PASSANGERS_TOPIC = "req7-topic";
         private static final String TOTAL_SEATING_CAPACITY_TOPIC = "req8-topic";
+        private static final String OCCUPANCY_PERCENTAGE_TOTAL_TOPIC = "req9-topic";
         private static final String AVERAGE_PASSENGERS_PER_TRANSPORT_TYPE = "req10-topic";
 
         public static void main(String[] args) {
@@ -178,18 +179,38 @@ public class Streams {
                                 .groupByKey(Grouped.with(Serdes.String(), Serdes.Long()))
                                 .reduce(
                                                 Long::sum,
-                                                Materialized.with(Serdes.String(), Serdes.Long())
-                                )
+                                                Materialized.with(Serdes.String(), Serdes.Long()))
                                 .mapValues(totalAvailableSeats -> new Number(0, totalAvailableSeats));
 
                 totalSeatingAvailable.toStream().to(TOTAL_SEATING_CAPACITY_TOPIC,
                                 Produced.with(Serdes.String(), new JsonSerde<>(Number.class)));
 
+                // -------------------- REQ 9 --------------------
+                // Calculate total occupancy percentage for all routes
+
+                KTable<String, Float> totalOccupancyPercentage = totalPassengers.join(
+                                totalSeatingAvailable,
+                                (passengers, seating) -> {
+                                        if (seating.getValue() == 0) { // Avoid division by zero
+                                                return 0.0f;
+                                        }
+                                        return ((float) passengers.getValue()
+                                                        / (passengers.getValue() + seating.getValue())) * 100;
+                                },
+                                Materialized.with(Serdes.String(), Serdes.Float()) // Materialize as Float
+                );
+
+                totalOccupancyPercentage.toStream()
+                                .mapValues(occupancy -> {
+                                        System.out.println("Total occupancy percentage for all routes: " + occupancy
+                                                        + "%");
+                                        return new RouteOccupancy(0l, occupancy);
+                                })
+                                .to(OCCUPANCY_PERCENTAGE_TOTAL_TOPIC,
+                                                Produced.with(Serdes.String(), new JsonSerde<>(RouteOccupancy.class)));
+
                 // -------------------- REQ 10 --------------------
                 // Get total passengers per transport type
-
-
-
 
                 KafkaStreams streams = new KafkaStreams(builder.build(), props);
                 CountDownLatch latch = new CountDownLatch(1);
