@@ -32,6 +32,7 @@ public class Streams {
     private static final String AVAILABLE_SEATS_PER_ROUTE_TOPIC = "req5";
     private static final String OCCUPANCY_PER_ROUTE_TOPIC = "occupancy-per-route-topic";
     private static final String TOTAL_PASSANGERS_TOPIC = "req7";
+    private static final String TOTAL_SEATING_CAPACITY_TOPIC = "req8";
 
     public static void main(String[] args) {
 
@@ -158,6 +159,22 @@ public class Streams {
                 });
         // Write the total passenger count to a new topic
         totalPassengers.toStream().to(TOTAL_PASSANGERS_TOPIC,
+                Produced.with(Serdes.String(), new JsonSerde<>(Number.class)));
+
+        // -------------------- REQ 8 --------------------
+        // Calculate total seating available for all routes
+        KTable<String, Number> totalSeatingAvailable = totalCapacityPerRoute
+                .toStream()
+                .map((routeId, capacity) -> KeyValue.pair("total", capacity))
+                .groupByKey(Grouped.with(Serdes.String(), Serdes.Long())) // Group all records by the constant key
+                .reduce(
+                        Long::sum, // Sum all seating capacities
+                        Materialized.with(Serdes.String(), Serdes.Long()) // Materialize the result
+                )
+                .mapValues(totalCapacity -> new Number(0, totalCapacity)); // Convert to Number class
+
+        // Write the total seating available to a new topic
+        totalSeatingAvailable.toStream().to(TOTAL_SEATING_CAPACITY_TOPIC,
                 Produced.with(Serdes.String(), new JsonSerde<>(Number.class)));
 
         KafkaStreams streams = new KafkaStreams(builder.build(), props);
