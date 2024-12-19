@@ -172,26 +172,23 @@ public class Streams {
 
                 // -------------------- REQ 8 --------------------
                 // Calculate total seating available for all routes
-                KTable<String, Number> totalSeatingAvailable = totalCapacityPerRoute
+                KTable<String, Number> totalSeatingAvailable = availableSeatsPerRoute
                                 .toStream()
-                                .map((routeId, capacity) -> KeyValue.pair("total", capacity))
-                                .groupByKey(Grouped.with(Serdes.String(), Serdes.Long())) // Group all records by the
-                                                                                          // constant key
+                                .map((routeId, availableSeats) -> KeyValue.pair("total", availableSeats))
+                                .groupByKey(Grouped.with(Serdes.String(), Serdes.Long()))
                                 .reduce(
-                                                Long::sum, // Sum all seating capacities
-                                                Materialized.with(Serdes.String(), Serdes.Long()) // Materialize the
-                                                                                                  // result
+                                                Long::sum,
+                                                Materialized.with(Serdes.String(), Serdes.Long())
                                 )
-                                .mapValues(totalCapacity -> new Number(0, totalCapacity)); // Convert to Number class
+                                .mapValues(totalAvailableSeats -> new Number(0, totalAvailableSeats));
 
-                // Write the total seating available to a new topic
                 totalSeatingAvailable.toStream().to(TOTAL_SEATING_CAPACITY_TOPIC,
                                 Produced.with(Serdes.String(), new JsonSerde<>(Number.class)));
 
                 // -------------------- REQ 10 --------------------
                 // Get total passengers per transport type
 
-                
+
 
 
                 KafkaStreams streams = new KafkaStreams(builder.build(), props);
