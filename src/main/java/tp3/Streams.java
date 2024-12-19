@@ -28,15 +28,14 @@ public class Streams {
     private static final String ROUTES_TOPIC = "routes-topic";
     private static final String TRIPS_TOPIC = "trips-topic";
     private static final String OPERATORS_FROM_DB = "operators-from-db";
-    private static final String PASSENGERS_PER_ROUTE_TOPIC = "passengers-per-route-topic";
-    private static final String AVAILABLE_SEATS_PER_ROUTE_TOPIC = "req5";
-    private static final String OCCUPANCY_PER_ROUTE_TOPIC = "occupancy-per-route-topic";
-    private static final String TOTAL_PASSANGERS_TOPIC = "req7";
-    private static final String TOTAL_SEATING_CAPACITY_TOPIC = "req8";
+    private static final String OPERATORS_TOPIC = "req1-topic";
+    private static final String PASSENGERS_PER_ROUTE_TOPIC = "req4-topic";
+    private static final String AVAILABLE_SEATS_PER_ROUTE_TOPIC = "req5-topic";
+    private static final String OCCUPANCY_PER_ROUTE_TOPIC = "req6-topic";
+    private static final String TOTAL_PASSANGERS_TOPIC = "req7-topic";
+    private static final String TOTAL_SEATING_CAPACITY_TOPIC = "req8-topic";
 
     public static void main(String[] args) {
-
-        String outputTopic = "req1";
 
         Properties props = new Properties();
 
@@ -57,7 +56,7 @@ public class Streams {
         routesStream.mapValues(value -> {
             System.out.println("Read from routes-topic: Value = " + value);
             return new Operator(value.getOperator());
-        }).to(outputTopic, Produced.with(Serdes.String(), new JsonSerde<>(Operator.class)));
+        }).to(OPERATORS_TOPIC, Produced.with(Serdes.String(), new JsonSerde<>(Operator.class)));
 
         // -------------------- REQ 2 --------------------
         // Stream to list route operators
