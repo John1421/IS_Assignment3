@@ -49,6 +49,7 @@ public class Streams {
         private static final String MOST_USED_TRANSPORT_TYPE_LAST_HOUR = "req13-topic";
         private static final String LEAST_OCUPIED_TRANSPORT_TYPE = "req14-topic";
         private static final String OPERATOR_WITH_MOST_OCCUPANCY_TOPIC = "req15-topic";
+        private static final String PASSENGER_WITH_MOST_TRIPS = "req16-topic";
 
         public static void main(String[] args) {
 
@@ -536,6 +537,47 @@ public class Streams {
                                 })
                                 .to(OPERATOR_WITH_MOST_OCCUPANCY_TOPIC, Produced.with(Serdes.String(),
                                                 new JsonSerde<>(RouteOccupancyWithAddedField.class)));
+
+                // -------------------- REQ 16 --------------------
+                // Get the name of the passenger with the most trips
+
+                // Step 1: Group trips by passengerId and count the number of trips per
+                // passenger
+                KTable<Long, Long> tripsCountPerPassenger = tripsStream
+                                .groupBy(
+                                                (key, trip) -> trip.getPassengerId(), // Group by passengerId
+                                                Grouped.with(Serdes.Long(), new JsonSerde<>(Trip.class))
+                                )
+                                .count(Materialized.with(Serdes.Long(), Serdes.Long()));
+
+                // Step 2: Reduce globally to find the passenger with the most trips
+                KTable<String, NameNumber> passengerWithMostTrips = tripsCountPerPassenger
+                                .toStream()
+                                .map((passengerId, tripCount) -> {
+                                        // Create a single key for global reduction
+                                        return KeyValue.pair("max_trips",
+                                                        new NameNumber(passengerId.toString(), tripCount));
+                                })
+                                .groupByKey(Grouped.with(Serdes.String(), new JsonSerde<>(NameNumber.class)))
+                                .reduce(
+                                                (currentMax, newMax) -> {
+                                                        // Retain the passenger with the highest trip count
+                                                        if (currentMax.getValue() >= newMax.getValue()) {
+                                                                return currentMax;
+                                                        } else {
+                                                                return newMax;
+                                                        }
+                                                },
+                                                Materialized.with(Serdes.String(), new JsonSerde<>(NameNumber.class)));
+
+                // Step 3: Output the results to a new topic
+                passengerWithMostTrips.toStream()
+                                .mapValues((key, value) -> {
+                                        System.out.println("Passenger with the most trips: " + value.getId()
+                                                        + " with " + value.getValue() + " trips.");
+                                        return value;
+                                })
+                                .to(PASSENGER_WITH_MOST_TRIPS, Produced.with(Serdes.String(), new JsonSerde<>(NameNumber.class)));
 
                 KafkaStreams streams = new KafkaStreams(builder.build(), props);
                 CountDownLatch latch = new CountDownLatch(1);
