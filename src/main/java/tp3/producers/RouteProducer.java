@@ -16,7 +16,7 @@ import java.util.Properties;
 @Slf4j
 public class RouteProducer {
 
-    private static final String BOOTSTRAP_SERVERS = "broker1:9092,broker2:9092,broker3:9092";
+    private static final String BOOTSTRAP_SERVERS = "broker1:9092,broker2:9093,broker3:9094";
 
     private static final String TOPIC = "routes-topic";
 

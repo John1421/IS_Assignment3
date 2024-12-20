@@ -33,7 +33,7 @@ import tp3.models.Trip;
 import tp3.serdes.JsonSerde;
 
 public class Streams {
-	private static final String BOOTSTRAP_SERVERS = "broker1:9092,broker2:9092,broker3:9092";
+	private static final String BOOTSTRAP_SERVERS = "broker1:9092,broker2:9093,broker3:9094";
 
 	private static final String ROUTES_TOPIC = "routes-topic";
 	private static final String TRIPS_TOPIC = "trips-topic";
