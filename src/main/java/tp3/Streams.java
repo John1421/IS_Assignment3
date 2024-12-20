@@ -98,9 +98,7 @@ public class Streams {
 		KGroupedStream<Long, Trip> tripsGroupedByRoute = tripsStream.groupBy(
 				(key, trip) -> {
 					if (trip != null) {
-						System.out.println("Trip processing: " + trip.getId()); // TODO: remove
-																				// logs at the
-																				// end
+						System.out.println("Trip processing: " + trip.getId());
 						return trip.getRouteId();
 					}
 					return null;
