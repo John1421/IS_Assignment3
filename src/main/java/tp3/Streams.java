@@ -447,25 +447,22 @@ public class Streams {
 				// Transform to compute the average
 				.mapValues(aggregate -> (float) (aggregate[0] / aggregate[1]));
 
-		// Find the transport type with the minimum occupancy
 		KTable<String, TransporType> minOccupancyTransportType = occupancyPerRouteWithTransport
 				.toStream()
 				.map(
 						(transportType, averageOccupancy) -> KeyValue.pair(
-								"min_occupancy", // Use a fixed key for aggregation
-								new TransportTypeOccupancy(transportType,
-										averageOccupancy) // Create the object
-						)) // Serializer
-				.groupByKey()
+								"min_occupancy",
+								new TransportTypeOccupancy(transportType, averageOccupancy)))
+				.groupByKey(Grouped.with(Serdes.String(), new JsonSerde<>(TransportTypeOccupancy.class)))
 				.reduce(
-						(current, next) -> current.getOccupancyPercentage() < next
-								.getOccupancyPercentage()
-										? current
-										: next,
+						(current, next) -> current.getOccupancyPercentage() < next.getOccupancyPercentage() ? current
+								: next,
 						Materialized.with(Serdes.String(), new JsonSerde<>(TransportTypeOccupancy.class)))
-				.mapValues((v) -> {
-					return new TransporType("min_occupancy", v.getTransportType());
-				});
+				.mapValues(v -> new TransporType("min_occupancy", v.getTransportType()));
+
+		minOccupancyTransportType.toStream().to(
+				LEAST_OCUPIED_TRANSPORT_TYPE,
+				Produced.with(Serdes.String(), new JsonSerde<>(TransporType.class)));
 
 		minOccupancyTransportType.toStream().to(LEAST_OCUPIED_TRANSPORT_TYPE,
 				Produced.with(Serdes.String(), new JsonSerde<>(TransporType.class)));
