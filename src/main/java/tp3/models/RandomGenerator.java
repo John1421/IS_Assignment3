@@ -17,6 +17,8 @@ public class RandomGenerator {
     private static List<String> OPERATORS = List.of(
             "SMTUC", "Bolt", "Flixbus", "Rede Expresso");
 
+    private static final List<Long> CAPACITIES = List.of(1l, 10l, 20l, 30l, 50l, 70l, 90l, 100l, 130l, 150l, 200l);
+
     public static void setOPERATORS(List<String> operators) {
         OPERATORS = operators;
     }
@@ -81,6 +83,6 @@ public class RandomGenerator {
      * @return a random integer between 1 and 250.
      */
     public static Long getRandomCapacity() {
-        return 1 + RANDOM.nextLong(250);
+        return CAPACITIES.get(RANDOM.nextInt(CAPACITIES.size()));
     }
 }

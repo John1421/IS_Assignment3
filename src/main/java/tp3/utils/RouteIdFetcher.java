@@ -17,16 +17,18 @@ public class RouteIdFetcher {
     private static final String TOPIC = "routes-topic";
     private static final String GROUP_ID = "route-id-fetcher";
 
-    public static List<Long> fetchRouteIds() {
+    public static List<Route> fetchRoutes() {
         Properties properties = new Properties();
         properties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, BOOTSTRAP_SERVERS);
         properties.setProperty(ConsumerConfig.GROUP_ID_CONFIG, GROUP_ID);
-        properties.setProperty(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringDeserializer");
+        properties.setProperty(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,
+                "org.apache.kafka.common.serialization.StringDeserializer");
         properties.setProperty(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, JsonSerde.class.getName());
         properties.setProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
 
-        List<Long> routeIds = new ArrayList<>();
-        KafkaConsumer<String, Route> consumer = new KafkaConsumer<>(properties, new org.apache.kafka.common.serialization.StringDeserializer(), new JsonSerde<>(Route.class));
+        List<Route> routes = new ArrayList<>();
+        KafkaConsumer<String, Route> consumer = new KafkaConsumer<>(properties,
+                new org.apache.kafka.common.serialization.StringDeserializer(), new JsonSerde<>(Route.class));
 
         try {
             consumer.subscribe(List.of(TOPIC));
@@ -34,13 +36,13 @@ public class RouteIdFetcher {
             for (ConsumerRecord<String, Route> record : records) {
                 Route route = record.value();
                 if (route != null) {
-                    routeIds.add(route.getId());
+                    routes.add(route);
                 }
             }
         } finally {
             consumer.close();
         }
 
-        return routeIds;
+        return routes;
     }
 }

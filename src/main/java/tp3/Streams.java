@@ -303,7 +303,7 @@ public class Streams {
 				.groupByKey(Grouped.with(Serdes.String(), Serdes.Long()))
 				.reduce((currentValue, newValue) -> {
 					return Math.max(currentValue, newValue);
-				});
+				}, Materialized.with(Serdes.String(), Serdes.Long()));
 
 		// Output the result
 		maxTransportType.toStream()
@@ -414,34 +414,33 @@ public class Streams {
 				.to(MOST_USED_TRANSPORT_TYPE_LAST_HOUR,
 						Produced.with(Serdes.String(), new JsonSerde<>(NameNumber.class)));
 
-		// -------------------- REQ 14 --------------------
+		// // -------------------- REQ 14 --------------------
 		// Map occupancyPerRoute to include transport type by joining with routesStream
+
 		KTable<Long, Route> routeWithTransportStream = routesStream
-				.map((key, route) -> KeyValue.pair(route.getId(), route)).toTable(); // Map routeId to
-																						// route object
+				.map((key, route) -> KeyValue.pair(route.getId(), route))
+				.toTable(Materialized.with(Serdes.Long(), new JsonSerde<>(Route.class)));
 
 		KTable<String, Float> occupancyPerRouteWithTransport = occupancyPerRoute
 				.toStream()
 				.join(
 						routeWithTransportStream,
 						(occupancy, route) -> new TransportTypeOccupancy(
-								route.getTransportType(), occupancy), // Map
-																		// routeId
-																		// to
-						// transportType
+								route.getTransportType(), occupancy),
 						Joined.with(Serdes.Long(), Serdes.Float(),
 								new JsonSerde<>(Route.class)))
 				.groupBy(
 						(routeId, transportAndOccupancy) -> transportAndOccupancy
-								.getTransportType())
+								.getTransportType(),
+						Grouped.with(Serdes.String(), new JsonSerde<>(TransportTypeOccupancy.class)))
 				.aggregate(
 						// Initializer: Start with (totalOccupancy = 0, count = 0)
 						() -> new double[] { 0.0, 0.0 },
 						// Aggregator: Update total occupancy and count
 						(key, newValue, aggregate) -> {
 							aggregate[0] += newValue.getOccupancyPercentage(); // Update
-																				// total
-																				// occupancy
+							// total
+							// occupancy
 							aggregate[1] += 1; // Increment count
 							return aggregate;
 						},
@@ -463,7 +462,8 @@ public class Streams {
 						(current, next) -> current.getOccupancyPercentage() < next
 								.getOccupancyPercentage()
 										? current
-										: next)
+										: next,
+						Materialized.with(Serdes.String(), new JsonSerde<>(TransportTypeOccupancy.class)))
 				.mapValues((v) -> {
 					return new TransporType("min_occupancy", v.getTransportType());
 				});

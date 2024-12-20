@@ -9,6 +9,7 @@ import org.apache.kafka.common.serialization.StringSerializer;
 import org.apache.kafka.streams.StreamsConfig;
 
 import lombok.extern.slf4j.Slf4j;
+import tp3.models.Route;
 import tp3.models.Trip;
 import tp3.serdes.JsonSerde;
 import tp3.utils.RouteIdFetcher;
@@ -35,10 +36,10 @@ public class TripProducer {
                 new StringSerializer(), new JsonSerde<>(Trip.class));
 
         // Fetch existing route IDs
-        List<Long> existingRouteIds = RouteIdFetcher.fetchRouteIds();
-        log.info("Fetched existing route IDs: {}", existingRouteIds);
+        List<Route> existingRoutes = RouteIdFetcher.fetchRoutes();
+        log.info("Fetched existing route IDs: {}", existingRoutes);
 
-        if (existingRouteIds.isEmpty()) {
+        if (existingRoutes.isEmpty()) {
             log.warn("No route IDs found in the topic. Exiting.");
             producer.close();
             return;
@@ -48,9 +49,13 @@ public class TripProducer {
 
         try {
             for (int i = 0; i < 100; i++) {
-                Long routeId = existingRouteIds.get(random.nextInt(existingRouteIds.size())); // Pick a random route ID
+                Route route = existingRoutes.get(random.nextInt(existingRoutes.size())); // Random route
+
                 Trip trip = new Trip(); // Create new Trip object
-                trip.setRouteId(routeId); // Assign valid routeId
+                trip.setRouteId(route.getId()); // Assign valid routeId
+                trip.setOrigin(route.getOrigin());
+                trip.setDestination(route.getDestination());
+                trip.setTransportType(route.getTransportType());
 
                 String key = "trip_" + trip.getId(); // Create key
                 ProducerRecord<String, Trip> record = new ProducerRecord<>(TOPIC, key, trip);
