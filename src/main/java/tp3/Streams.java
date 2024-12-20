@@ -25,6 +25,7 @@ import tp3.models.Operator;
 import tp3.models.Route;
 import tp3.models.NameNumber;
 import tp3.models.Number;
+import tp3.models.OccupancyAggregate;
 import tp3.models.RouteOccupancy;
 import tp3.models.RouteOccupancyWithAddedField;
 import tp3.models.TransporType;
@@ -419,7 +420,7 @@ public class Streams {
 				.to(MOST_USED_TRANSPORT_TYPE_LAST_HOUR,
 						Produced.with(Serdes.String(), new JsonSerde<>(NameNumber.class)));
 
-		// // -------------------- REQ 14 --------------------
+		// -------------------- REQ 14 --------------------
 
 		KTable<Long, Route> routeWithTransportStream = routesStream
 				.map((key, route) -> KeyValue.pair(route.getId(), route))
@@ -438,19 +439,15 @@ public class Streams {
 								.getTransportType(),
 						Grouped.with(Serdes.String(), new JsonSerde<>(TransportTypeOccupancy.class)))
 				.aggregate(
-						// Initializer: Start with (totalOccupancy = 0, count = 0)
-						() -> new double[] { 0.0, 0.0 },
-						// Aggregator: Update total occupancy and count
+						() -> new OccupancyAggregate(0.0, 0.0),
 						(key, newValue, aggregate) -> {
-							aggregate[0] += newValue.getOccupancyPercentage(); // Update
-							// total
-							// occupancy
-							aggregate[1] += 1; // Increment count
+							aggregate.setTotalOccupancy(
+									aggregate.getTotalOccupancy() + newValue.getOccupancyPercentage());
+							aggregate.setCount(aggregate.getCount() + 1);
 							return aggregate;
 						},
-						Materialized.with(Serdes.String(), new JsonSerde<>(double[].class)))
-				// Transform to compute the average
-				.mapValues(aggregate -> (float) (aggregate[0] / aggregate[1]));
+						Materialized.with(Serdes.String(), new JsonSerde<>(OccupancyAggregate.class)))
+				.mapValues(aggregate -> (float) (aggregate.getTotalOccupancy() / aggregate.getCount()));
 
 		KTable<String, TransporType> minOccupancyTransportType = occupancyPerRouteWithTransport
 				.toStream()
@@ -467,9 +464,6 @@ public class Streams {
 
 		minOccupancyTransportType.toStream().to(
 				LEAST_OCUPIED_TRANSPORT_TYPE,
-				Produced.with(Serdes.String(), new JsonSerde<>(TransporType.class)));
-
-		minOccupancyTransportType.toStream().to(LEAST_OCUPIED_TRANSPORT_TYPE,
 				Produced.with(Serdes.String(), new JsonSerde<>(TransporType.class)));
 
 		// -------------------- REQ 15 --------------------

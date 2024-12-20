@@ -5,9 +5,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
-@AllArgsConstructor
 @NoArgsConstructor
-public class TransporType {
-    private String id;
-    private String value;
+@AllArgsConstructor
+public class OccupancyAggregate {
+    private double totalOccupancy;
+    private double count;
 }
