@@ -7,8 +7,8 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class RouteOccupancyWithTransportType {
+public class RouteOccupancyWithAddedField {
     private Long routeId;
-    private String transportType;
+    private String name;
     private Float occupancyPercentage;
 }
