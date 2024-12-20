@@ -17,7 +17,8 @@ import java.util.Properties;
 
 @Slf4j
 public class TestRouteProducer {
-    private static final String BOOTSTRAP_SERVERS = "broker1:9092";
+    private static final String BOOTSTRAP_SERVERS = "broker1:9092,broker2:9092,broker3:9092";
+
     private static final String TOPIC = "routes-topic";
     private static final List<Route> testRoutes = new ArrayList<>();
 
@@ -34,6 +35,9 @@ public class TestRouteProducer {
         properties.setProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
         properties.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
         properties.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.String().getClass());
+        properties.setProperty(ProducerConfig.ACKS_CONFIG, "all");
+        properties.setProperty(ProducerConfig.RETRIES_CONFIG, "10");
+        properties.setProperty(ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION, "5");
 
         KafkaProducer<String, Route> producer = new KafkaProducer<>(properties,
                 new StringSerializer(), new JsonSerde<>(Route.class));

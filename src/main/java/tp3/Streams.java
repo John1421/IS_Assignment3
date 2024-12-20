@@ -4,6 +4,7 @@ import java.time.Duration;
 import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
 
+import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.KeyValue;
@@ -32,6 +33,7 @@ import tp3.models.Trip;
 import tp3.serdes.JsonSerde;
 
 public class Streams {
+	private static final String BOOTSTRAP_SERVERS = "broker1:9092,broker2:9092,broker3:9092";
 
 	private static final String ROUTES_TOPIC = "routes-topic";
 	private static final String TRIPS_TOPIC = "trips-topic";
@@ -53,13 +55,16 @@ public class Streams {
 
 	public static void main(String[] args) {
 
-		Properties props = new Properties();
+		Properties properties = new Properties();
 
-		props.put(StreamsConfig.APPLICATION_ID_CONFIG, "project3");
+		properties.put(StreamsConfig.APPLICATION_ID_CONFIG, "project3");
 
-		props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "broker1:9092");
+		properties.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, BOOTSTRAP_SERVERS);
 
-		props.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.String().getClass());
+		properties.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.String().getClass());
+		properties.setProperty(ProducerConfig.ACKS_CONFIG, "all");
+		properties.setProperty(ProducerConfig.RETRIES_CONFIG, "10");
+		properties.setProperty(ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION, "5");
 
 		StreamsBuilder builder = new StreamsBuilder();
 
@@ -574,7 +579,7 @@ public class Streams {
 				})
 				.to(PASSENGER_WITH_MOST_TRIPS, Produced.with(Serdes.String(), new JsonSerde<>(NameNumber.class)));
 
-		KafkaStreams streams = new KafkaStreams(builder.build(), props);
+		KafkaStreams streams = new KafkaStreams(builder.build(), properties);
 		CountDownLatch latch = new CountDownLatch(1);
 		Runtime.getRuntime().addShutdownHook(
 				new Thread("streams-shutdown-hook") {
