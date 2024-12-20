@@ -39,8 +39,8 @@ public class TestRouteProducer {
                 new StringSerializer(), new JsonSerde<>(Route.class));
 
         try {
-            for (int i = 0; i < 10; i++) {
-                Route route = new Route(); // Create new Route object
+            for (int i = 0; i < testRoutes.size(); i++) {
+                Route route = testRoutes.get(i); // Create new Route object
                 String key = "route_" + route.getId(); // Create key
 
                 ProducerRecord<String, Route> record = new ProducerRecord<>(TOPIC, key, route);

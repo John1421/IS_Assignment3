@@ -415,7 +415,6 @@ public class Streams {
 						Produced.with(Serdes.String(), new JsonSerde<>(NameNumber.class)));
 
 		// // -------------------- REQ 14 --------------------
-		// Map occupancyPerRoute to include transport type by joining with routesStream
 
 		KTable<Long, Route> routeWithTransportStream = routesStream
 				.map((key, route) -> KeyValue.pair(route.getId(), route))
